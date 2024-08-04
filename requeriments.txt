@@ -1,0 +1,5 @@
+pynacl
+discord
+yt_dlp
+ffmpeg
+bs4
