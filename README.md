@@ -5,4 +5,4 @@ caso tenha problemas com a execução de musicas, como travamentos, tente usar o
 
 use:
 
->>pip install -U --pre "yt-dlp[default]"
+>pip install -U --pre "yt-dlp[default]"
