@@ -91,9 +91,6 @@ class MusicBot(commands.Cog):
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.stop()
             await ctx.send("Skipped")
-        if ctx.voice_client.is_playing():
-            if self.timer_task:
-                self.timer_task.cancel()
     @commands.command()
     async def queue(self, ctx):
         if self.queue:
@@ -101,7 +98,7 @@ class MusicBot(commands.Cog):
             queue_str = '\n'.join(queue_list)
             await ctx.send(f"Queue:\n{queue_str}")
         else:
-            await ctx.send("Queue is empty.")    @commands.command()
+            await ctx.send("Queue is empty.")
     @commands.command()
     async def leave(self, ctx):
         if ctx.voice_client:
