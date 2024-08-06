@@ -11,52 +11,65 @@ intents.voice_states = True
 intents.message_content = True
 
 time_to_get_out = 150
-TOKEN = '' # discord bot token
+TOKEN = '' # insert your discord bot token
 
 FFMPEG_OPTIONS = {
     'options': '-vn',
     'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
-} 
+} #ffmpeg options for streaming
 
-YDL_OPTIONS = {'format' : 'bestaudio', 'noplaylist' : True }
+YDL_OPTIONS = {'format' : 'bestaudio', 'noplaylist' : True } #youtube-dl options to get best audio
 
 def get_youtube_title(url):
+        """Get YouTube video title"""
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'html.parser')
         title = soup.find('title').string.replace(' - YouTube', '')
         return title
+    
 class MusicBot(commands.Cog):
     def __init__(self, client): 
         self.client = client
         self.queue = []
         self.timer_task = None
+
     @commands.command()
     async def play(self, ctx, *, search):
+        """command to play music"""
         voice_channel = ctx.author.voice.channel if ctx.author.voice else None
+
         if not voice_channel:
            return await ctx.send("You're not in a voice channel!")
+
         if re.match(r'^(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=[\w-]+', search) or re.match(r'^(?:https?:\/\/)?youtu\.be\/[\w-]+', search):
+            """detect youtube link"""
             print("YOUTUBE LINK DETECTED")
             url = search
             title = get_youtube_title(url)
             print (title)
             print (url)
+            
             if not ctx.voice_client:
                 await voice_channel.connect()
+            
             async with ctx.typing():
                 with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
                     info = ydl.extract_info(url, download=False)
+                    
                     if 'entries' in info:
                         info = info['entries'][0]
                     url = info['url']
                     title = info['title']
                     self.queue.append((url, title))
                     await ctx.send(f'Added to queue: **{title}**')
+                    
                     if not ctx.voice_client.is_playing():
                         await self.play_next(ctx)
+        
         else:
             if not ctx.voice_client:
                 await voice_channel.connect()
+            
             async with ctx.typing():
                 with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
                     info = ydl.extract_info(f"ytsearch:{search}", download=False)
@@ -73,7 +86,8 @@ class MusicBot(commands.Cog):
         else:
             await self.play_next(ctx) 
 
-    async def play_next(self, ctx): 
+    async def play_next(self, ctx):
+        """function to play next song"""
         if self.queue:
             url, title = self.queue.pop(0)
             source = await discord.FFmpegOpusAudio.from_probe(url, **FFMPEG_OPTIONS)
@@ -88,24 +102,31 @@ class MusicBot(commands.Cog):
 
     @commands.command()
     async def skip(self, ctx):
+        """command to skip current playing song"""
         if ctx.voice_client and ctx.voice_client.is_playing():
             ctx.voice_client.stop()
             await ctx.send("Skipped")
+
     @commands.command()
     async def queue(self, ctx):
+        """command to show queue"""
         if self.queue:
             queue_list = [f'**{title}**' for _, title in self.queue]
             queue_str = '\n'.join(queue_list)
             await ctx.send(f"Queue:\n{queue_str}")
         else:
             await ctx.send("Queue is empty.")
+            
     @commands.command()
     async def leave(self, ctx):
+        """command to leave voice channel"""
         if ctx.voice_client:
             await ctx.voice_client.disconnect()
         else:
             await ctx.send("I am not connected to a voice channel") 
-    async def timer(self, ctx): 
+
+    async def timer(self, ctx):
+        """function to start timer to get the bot off the channel"""
         await asyncio.sleep(time_to_get_out)
         print ("Timer is up!")
         if not self.client.is_closed():
@@ -113,7 +134,7 @@ class MusicBot(commands.Cog):
                 await ctx.voice_client.disconnect()
             else:
                 await ctx.send("I am not connected to a voice channel")
-
+                
 client = commands.Bot(command_prefix="!", intents=intents)
 
 async def main():
